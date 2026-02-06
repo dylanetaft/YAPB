@@ -10,6 +10,19 @@ A minimal, zero-allocation binary serialization library in C.
 - **Forward compatible** - new fields silently ignored by old readers
 - **Zero dependencies** - pure C11, no allocations
 
+## Motivation
+I've used Google Protobufs and FlatBuffers in other projects, but
+found them too heavy-weight for simple use cases.  They function as 
+code generators, and create data structures that align with what 
+needs to be transmitted on the wire. Wire data structures don't 
+nessarily match the use case of app level data structures.  
+This leads to extra complexity in mapping between wire format and
+application formats. YAPB is designed to be a simple, minimal
+library that allows direct serialization of primitive types and
+nested packets, without the complexity of code generation or
+schema definitions.  The codebase is small and can be aggressively
+tested as well as fuzzed for robustness.
+
 ## Building
 
 ```bash

@@ -1,5 +1,8 @@
-# YAPB Architecture & API
+# YAPB - Yet Another Protocol Buffer
 
+A minimal, zero-allocation binary serialization library in C.
+
+# YAPB Architecture & API
 ## Packet Format
 
 Every YAPB packet has a simple wire format:
