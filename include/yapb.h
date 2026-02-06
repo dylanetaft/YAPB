@@ -1,6 +1,7 @@
 #pragma once
 #include <stdint.h>
 #include <stddef.h>
+#include <stdalign.h>
 
 /**
  * YAPB - Yet Another Protocol Buffer format
@@ -53,12 +54,10 @@ typedef enum {
     YAPB_STS_COMPLETE         = 1,
 } YAPB_Result_t;
 
+#define YAPB_PACKET_SIZE 48
+
 typedef struct YAPB_Packet {
-    uint8_t *buffer;      // buffer for writing / raw data for reading
-    size_t buffer_size;   // total buffer size
-    size_t pos;           // current read/write position (starts after header)
-    int mode;             // YAPB_MODE_WRITE or YAPB_MODE_READ
-    YAPB_Result_t error;  // sticky error state, checked by get_error()
+    alignas(max_align_t) unsigned char _opaque[YAPB_PACKET_SIZE];
 } YAPB_Packet_t;
 
 /**

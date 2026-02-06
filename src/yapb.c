@@ -2,6 +2,20 @@
 #include <string.h>
 #include <arpa/inet.h>
 
+typedef struct {
+    uint8_t *buffer;      // buffer for writing / raw data for reading
+    size_t buffer_size;   // total buffer size
+    size_t pos;           // current read/write position (starts after header)
+    int mode;             // YAPB_MODE_WRITE or YAPB_MODE_READ
+    YAPB_Result_t error;  // sticky error state, checked by get_error()
+} _YAPB_Packet_t;
+
+_Static_assert(sizeof(_YAPB_Packet_t) <= YAPB_PACKET_SIZE,
+    "YAPB_PACKET_SIZE too small for _YAPB_Packet_t");
+
+#define P(x) ((_YAPB_Packet_t *)(x))
+#define CP(x) ((const _YAPB_Packet_t *)(x))
+
 // Helper to write uint16 in network byte order
 static inline void write_u16(uint8_t *dst, uint16_t val) {
     uint16_t net = htons(val);
@@ -45,58 +59,56 @@ static inline uint64_t read_u64(const uint8_t *src) {
 }
 
 // Helper to check if at end of packet (for returning COMPLETE vs OK)
-static inline YAPB_Result_t check_complete(YAPB_Packet_t *pkt) {
-    return (pkt->pos >= pkt->buffer_size) ? YAPB_STS_COMPLETE : YAPB_OK;
+static inline YAPB_Result_t check_complete(_YAPB_Packet_t *p) {
+    return (p->pos >= p->buffer_size) ? YAPB_STS_COMPLETE : YAPB_OK;
 }
 
 // Helper to validate pop preconditions and type
-static inline YAPB_Result_t _pop_validate(YAPB_Packet_t *pkt, void *out, YAPB_Type_t expected, size_t type_size) {
-    if (pkt == NULL || out == NULL) {
+static inline YAPB_Result_t _pop_validate(_YAPB_Packet_t *p, void *out, YAPB_Type_t expected, size_t type_size) {
+    if (p == NULL || out == NULL) {
         return YAPB_ERR_NULL_PTR;
     }
-    // Check sticky error state
-    if (pkt->error < 0) {
-        return pkt->error;
+    if (p->error < 0) {
+        return p->error;
     }
-    if (pkt->mode != YAPB_MODE_READ) {
-        pkt->error = YAPB_ERR_INVALID_MODE;
-        return pkt->error;
+    if (p->mode != YAPB_MODE_READ) {
+        p->error = YAPB_ERR_INVALID_MODE;
+        return p->error;
     }
-    if (pkt->pos >= pkt->buffer_size) {
-        pkt->error = YAPB_ERR_NO_MORE_ELEMENTS;
-        return pkt->error;
+    if (p->pos >= p->buffer_size) {
+        p->error = YAPB_ERR_NO_MORE_ELEMENTS;
+        return p->error;
     }
-    YAPB_Type_t type = (YAPB_Type_t)pkt->buffer[pkt->pos];
+    YAPB_Type_t type = (YAPB_Type_t)p->buffer[p->pos];
     if (type != expected) {
-        pkt->error = YAPB_ERR_TYPE_MISMATCH;
-        return pkt->error;
+        p->error = YAPB_ERR_TYPE_MISMATCH;
+        return p->error;
     }
 
-    if (pkt->pos + 1 + type_size > pkt->buffer_size) {
-        pkt->error = YAPB_ERR_INVALID_PACKET;
-        return pkt->error;
+    if (p->pos + 1 + type_size > p->buffer_size) {
+        p->error = YAPB_ERR_INVALID_PACKET;
+        return p->error;
     }
-    
-    pkt->pos++;  // consume type byte
+
+    p->pos++;  // consume type byte
     return YAPB_OK;
 }
 
 // Helper to validate push preconditions
-static inline YAPB_Result_t push_validate(YAPB_Packet_t *pkt, const void *val, size_t needed) {
-    if (pkt == NULL || val == NULL) {
+static inline YAPB_Result_t push_validate(_YAPB_Packet_t *p, const void *val, size_t needed) {
+    if (p == NULL || val == NULL) {
         return YAPB_ERR_NULL_PTR;
     }
-    // Check sticky error state
-    if (pkt->error < 0) {
-        return pkt->error;
+    if (p->error < 0) {
+        return p->error;
     }
-    if (pkt->mode != YAPB_MODE_WRITE) {
-        pkt->error = YAPB_ERR_INVALID_MODE;
-        return pkt->error;
+    if (p->mode != YAPB_MODE_WRITE) {
+        p->error = YAPB_ERR_INVALID_MODE;
+        return p->error;
     }
-    if (pkt->pos + needed > pkt->buffer_size) {
-        pkt->error = YAPB_ERR_BUFFER_TOO_SMALL;
-        return pkt->error;
+    if (p->pos + needed > p->buffer_size) {
+        p->error = YAPB_ERR_BUFFER_TOO_SMALL;
+        return p->error;
     }
     return YAPB_OK;
 }
@@ -108,14 +120,14 @@ YAPB_Result_t YAPB_initialize(YAPB_Packet_t *pkt, uint8_t *buffer, size_t size) 
     if (size < YAPB_HEADER_SIZE) {
         return YAPB_ERR_BUFFER_TOO_SMALL;
     }
+    _YAPB_Packet_t *p = P(pkt);
 
-    pkt->buffer = buffer;
-    pkt->buffer_size = size;
-    pkt->pos = YAPB_HEADER_SIZE;
-    pkt->mode = YAPB_MODE_WRITE;
-    pkt->error = YAPB_OK;  // clear error state
+    p->buffer = buffer;
+    p->buffer_size = size;
+    p->pos = YAPB_HEADER_SIZE;
+    p->mode = YAPB_MODE_WRITE;
+    p->error = YAPB_OK;
 
-    // Write 0 length to header as safety measure in case finalize is forgotten
     write_u32(buffer, 0);
 
     return YAPB_OK;
@@ -125,14 +137,15 @@ YAPB_Result_t YAPB_finalize(YAPB_Packet_t *pkt, size_t *out_len) {
     if (pkt == NULL) {
         return YAPB_ERR_NULL_PTR;
     }
-    if (pkt->mode != YAPB_MODE_WRITE) {
+    _YAPB_Packet_t *p = P(pkt);
+    if (p->mode != YAPB_MODE_WRITE) {
         return YAPB_ERR_INVALID_MODE;
     }
 
-    write_u32(pkt->buffer, (uint32_t)pkt->pos);
+    write_u32(p->buffer, (uint32_t)p->pos);
 
     if (out_len != NULL) {
-        *out_len = pkt->pos;
+        *out_len = p->pos;
     }
 
     return YAPB_OK;
@@ -150,12 +163,13 @@ YAPB_Result_t YAPB_load(YAPB_Packet_t *pkt, const uint8_t *data, size_t size) {
     if (pkt_len > size || pkt_len < YAPB_HEADER_SIZE) {
         return YAPB_ERR_INVALID_PACKET;
     }
+    _YAPB_Packet_t *p = P(pkt);
 
-    pkt->buffer = (uint8_t *)data;
-    pkt->buffer_size = pkt_len;
-    pkt->pos = YAPB_HEADER_SIZE;
-    pkt->mode = YAPB_MODE_READ;
-    pkt->error = YAPB_OK;  // clear error state
+    p->buffer = (uint8_t *)data;
+    p->buffer_size = pkt_len;
+    p->pos = YAPB_HEADER_SIZE;
+    p->mode = YAPB_MODE_READ;
+    p->error = YAPB_OK;
 
     return YAPB_OK;
 }
@@ -163,65 +177,71 @@ YAPB_Result_t YAPB_load(YAPB_Packet_t *pkt, const uint8_t *data, size_t size) {
 // ============ Push functions ============
 
 YAPB_Result_t YAPB_push_i8(YAPB_Packet_t *pkt, const int8_t *val) {
-    YAPB_Result_t r = push_validate(pkt, val, 1 + 1);
+    _YAPB_Packet_t *p = P(pkt);
+    YAPB_Result_t r = push_validate(p, val, 1 + 1);
     if (r != YAPB_OK) return r;
 
-    pkt->buffer[pkt->pos++] = YAPB_INT8;
-    pkt->buffer[pkt->pos++] = (uint8_t)*val;
+    p->buffer[p->pos++] = YAPB_INT8;
+    p->buffer[p->pos++] = (uint8_t)*val;
     return YAPB_OK;
 }
 
 YAPB_Result_t YAPB_push_i16(YAPB_Packet_t *pkt, const int16_t *val) {
-    YAPB_Result_t r = push_validate(pkt, val, 1 + 2);
+    _YAPB_Packet_t *p = P(pkt);
+    YAPB_Result_t r = push_validate(p, val, 1 + 2);
     if (r != YAPB_OK) return r;
 
-    pkt->buffer[pkt->pos++] = YAPB_INT16;
-    write_u16(pkt->buffer + pkt->pos, (uint16_t)*val);
-    pkt->pos += 2;
+    p->buffer[p->pos++] = YAPB_INT16;
+    write_u16(p->buffer + p->pos, (uint16_t)*val);
+    p->pos += 2;
     return YAPB_OK;
 }
 
 YAPB_Result_t YAPB_push_i32(YAPB_Packet_t *pkt, const int32_t *val) {
-    YAPB_Result_t r = push_validate(pkt, val, 1 + 4);
+    _YAPB_Packet_t *p = P(pkt);
+    YAPB_Result_t r = push_validate(p, val, 1 + 4);
     if (r != YAPB_OK) return r;
 
-    pkt->buffer[pkt->pos++] = YAPB_INT32;
-    write_u32(pkt->buffer + pkt->pos, (uint32_t)*val);
-    pkt->pos += 4;
+    p->buffer[p->pos++] = YAPB_INT32;
+    write_u32(p->buffer + p->pos, (uint32_t)*val);
+    p->pos += 4;
     return YAPB_OK;
 }
 
 YAPB_Result_t YAPB_push_i64(YAPB_Packet_t *pkt, const int64_t *val) {
-    YAPB_Result_t r = push_validate(pkt, val, 1 + 8);
+    _YAPB_Packet_t *p = P(pkt);
+    YAPB_Result_t r = push_validate(p, val, 1 + 8);
     if (r != YAPB_OK) return r;
 
-    pkt->buffer[pkt->pos++] = YAPB_INT64;
-    write_u64(pkt->buffer + pkt->pos, (uint64_t)*val);
-    pkt->pos += 8;
+    p->buffer[p->pos++] = YAPB_INT64;
+    write_u64(p->buffer + p->pos, (uint64_t)*val);
+    p->pos += 8;
     return YAPB_OK;
 }
 
 YAPB_Result_t YAPB_push_float(YAPB_Packet_t *pkt, const float *val) {
-    YAPB_Result_t r = push_validate(pkt, val, 1 + 4);
+    _YAPB_Packet_t *p = P(pkt);
+    YAPB_Result_t r = push_validate(p, val, 1 + 4);
     if (r != YAPB_OK) return r;
 
-    pkt->buffer[pkt->pos++] = YAPB_FLOAT;
+    p->buffer[p->pos++] = YAPB_FLOAT;
     uint32_t bits;
     memcpy(&bits, val, 4);
-    write_u32(pkt->buffer + pkt->pos, bits);
-    pkt->pos += 4;
+    write_u32(p->buffer + p->pos, bits);
+    p->pos += 4;
     return YAPB_OK;
 }
 
 YAPB_Result_t YAPB_push_double(YAPB_Packet_t *pkt, const double *val) {
-    YAPB_Result_t r = push_validate(pkt, val, 1 + 8);
+    _YAPB_Packet_t *p = P(pkt);
+    YAPB_Result_t r = push_validate(p, val, 1 + 8);
     if (r != YAPB_OK) return r;
 
-    pkt->buffer[pkt->pos++] = YAPB_DOUBLE;
+    p->buffer[p->pos++] = YAPB_DOUBLE;
     uint64_t bits;
     memcpy(&bits, val, 8);
-    write_u64(pkt->buffer + pkt->pos, bits);
-    pkt->pos += 8;
+    write_u64(p->buffer + p->pos, bits);
+    p->pos += 8;
     return YAPB_OK;
 }
 
@@ -229,158 +249,170 @@ YAPB_Result_t YAPB_push_blob(YAPB_Packet_t *pkt, const uint8_t *data, uint16_t l
     if (pkt == NULL) {
         return YAPB_ERR_NULL_PTR;
     }
-    if (pkt->error < 0) {
-        return pkt->error;
+    _YAPB_Packet_t *p = P(pkt);
+    if (p->error < 0) {
+        return p->error;
     }
     if (len > 0 && data == NULL) {
         return YAPB_ERR_NULL_PTR;
     }
-    if (pkt->mode != YAPB_MODE_WRITE) {
-        pkt->error = YAPB_ERR_INVALID_MODE;
-        return pkt->error;
+    if (p->mode != YAPB_MODE_WRITE) {
+        p->error = YAPB_ERR_INVALID_MODE;
+        return p->error;
     }
-    if (pkt->pos + 1 + 2 + len > pkt->buffer_size) {
-        pkt->error = YAPB_ERR_BUFFER_TOO_SMALL;
-        return pkt->error;
+    if (p->pos + 1 + 2 + len > p->buffer_size) {
+        p->error = YAPB_ERR_BUFFER_TOO_SMALL;
+        return p->error;
     }
 
-    pkt->buffer[pkt->pos++] = YAPB_BLOB;
-    write_u16(pkt->buffer + pkt->pos, len);
-    pkt->pos += 2;
+    p->buffer[p->pos++] = YAPB_BLOB;
+    write_u16(p->buffer + p->pos, len);
+    p->pos += 2;
     if (len > 0) {
-        memcpy(pkt->buffer + pkt->pos, data, len);
-        pkt->pos += len;
+        memcpy(p->buffer + p->pos, data, len);
+        p->pos += len;
     }
     return YAPB_OK;
 }
 
 YAPB_Result_t YAPB_push_nested(YAPB_Packet_t *pkt, const YAPB_Packet_t *nested) {
-    if (pkt == NULL || nested == NULL || nested->buffer == NULL) {
+    const _YAPB_Packet_t *np = CP(nested);
+    if (pkt == NULL || nested == NULL || np->buffer == NULL) {
         return YAPB_ERR_NULL_PTR;
     }
-    if (pkt->error < 0) {
-        return pkt->error;
+    _YAPB_Packet_t *p = P(pkt);
+    if (p->error < 0) {
+        return p->error;
     }
-    if (pkt->mode != YAPB_MODE_WRITE) {
-        pkt->error = YAPB_ERR_INVALID_MODE;
-        return pkt->error;
-    }
-
-    uint32_t nested_len = read_u32(nested->buffer);
-    if (pkt->pos + 1 + nested_len > pkt->buffer_size) {
-        pkt->error = YAPB_ERR_BUFFER_TOO_SMALL;
-        return pkt->error;
+    if (p->mode != YAPB_MODE_WRITE) {
+        p->error = YAPB_ERR_INVALID_MODE;
+        return p->error;
     }
 
-    pkt->buffer[pkt->pos++] = YAPB_NESTED_PKT;
-    memcpy(pkt->buffer + pkt->pos, nested->buffer, nested_len);
-    pkt->pos += nested_len;
+    uint32_t nested_len = read_u32(np->buffer);
+    if (p->pos + 1 + nested_len > p->buffer_size) {
+        p->error = YAPB_ERR_BUFFER_TOO_SMALL;
+        return p->error;
+    }
+
+    p->buffer[p->pos++] = YAPB_NESTED_PKT;
+    memcpy(p->buffer + p->pos, np->buffer, nested_len);
+    p->pos += nested_len;
     return YAPB_OK;
 }
 
 // ============ Pop functions ============
 
 YAPB_Result_t YAPB_pop_i8(YAPB_Packet_t *pkt, int8_t *out) {
-    YAPB_Result_t r = _pop_validate(pkt, out, YAPB_INT8, 1);
+    _YAPB_Packet_t *p = P(pkt);
+    YAPB_Result_t r = _pop_validate(p, out, YAPB_INT8, 1);
     if (r != YAPB_OK) return r;
-    *out = (int8_t)pkt->buffer[pkt->pos++];
-    return check_complete(pkt);
+    *out = (int8_t)p->buffer[p->pos++];
+    return check_complete(p);
 }
 
 YAPB_Result_t YAPB_pop_i16(YAPB_Packet_t *pkt, int16_t *out) {
-    YAPB_Result_t r = _pop_validate(pkt, out, YAPB_INT16, 2);
+    _YAPB_Packet_t *p = P(pkt);
+    YAPB_Result_t r = _pop_validate(p, out, YAPB_INT16, 2);
     if (r != YAPB_OK) return r;
-    *out = (int16_t)read_u16(pkt->buffer + pkt->pos);
-    pkt->pos += 2;
-    return check_complete(pkt);
+    *out = (int16_t)read_u16(p->buffer + p->pos);
+    p->pos += 2;
+    return check_complete(p);
 }
 
 YAPB_Result_t YAPB_pop_i32(YAPB_Packet_t *pkt, int32_t *out) {
-    YAPB_Result_t r = _pop_validate(pkt, out, YAPB_INT32, 4);
+    _YAPB_Packet_t *p = P(pkt);
+    YAPB_Result_t r = _pop_validate(p, out, YAPB_INT32, 4);
     if (r != YAPB_OK) return r;
-    *out = (int32_t)read_u32(pkt->buffer + pkt->pos);
-    pkt->pos += 4;
-    return check_complete(pkt);
+    *out = (int32_t)read_u32(p->buffer + p->pos);
+    p->pos += 4;
+    return check_complete(p);
 }
 
 YAPB_Result_t YAPB_pop_i64(YAPB_Packet_t *pkt, int64_t *out) {
-    YAPB_Result_t r = _pop_validate(pkt, out, YAPB_INT64, 8);
+    _YAPB_Packet_t *p = P(pkt);
+    YAPB_Result_t r = _pop_validate(p, out, YAPB_INT64, 8);
     if (r != YAPB_OK) return r;
-    *out = (int64_t)read_u64(pkt->buffer + pkt->pos);
-    pkt->pos += 8;
-    return check_complete(pkt);
+    *out = (int64_t)read_u64(p->buffer + p->pos);
+    p->pos += 8;
+    return check_complete(p);
 }
 
 YAPB_Result_t YAPB_pop_float(YAPB_Packet_t *pkt, float *out) {
-    YAPB_Result_t r = _pop_validate(pkt, out, YAPB_FLOAT, 4);
+    _YAPB_Packet_t *p = P(pkt);
+    YAPB_Result_t r = _pop_validate(p, out, YAPB_FLOAT, 4);
     if (r != YAPB_OK) return r;
-    uint32_t bits = read_u32(pkt->buffer + pkt->pos);
+    uint32_t bits = read_u32(p->buffer + p->pos);
     memcpy(out, &bits, 4);
-    pkt->pos += 4;
-    return check_complete(pkt);
+    p->pos += 4;
+    return check_complete(p);
 }
 
 YAPB_Result_t YAPB_pop_double(YAPB_Packet_t *pkt, double *out) {
-    YAPB_Result_t r = _pop_validate(pkt, out, YAPB_DOUBLE, 8);
+    _YAPB_Packet_t *p = P(pkt);
+    YAPB_Result_t r = _pop_validate(p, out, YAPB_DOUBLE, 8);
     if (r != YAPB_OK) return r;
-    uint64_t bits = read_u64(pkt->buffer + pkt->pos);
+    uint64_t bits = read_u64(p->buffer + p->pos);
     memcpy(out, &bits, 8);
-    pkt->pos += 8;
-    return check_complete(pkt);
+    p->pos += 8;
+    return check_complete(p);
 }
 
 YAPB_Result_t YAPB_pop_blob(YAPB_Packet_t *pkt, const uint8_t **data, uint16_t *len) {
     if (len == NULL) return YAPB_ERR_NULL_PTR;
+    _YAPB_Packet_t *p = P(pkt);
 
-    if (pkt->pos + 3 > pkt->buffer_size) {
-        pkt->error = YAPB_ERR_INVALID_PACKET;
-        return pkt->error;
+    if (p->pos + 3 > p->buffer_size) {
+        p->error = YAPB_ERR_INVALID_PACKET;
+        return p->error;
     }
-    *len = read_u16(pkt->buffer + pkt->pos + 1);
-    YAPB_Result_t r = _pop_validate(pkt, data, YAPB_BLOB, *len + 2);
+    *len = read_u16(p->buffer + p->pos + 1);
+    YAPB_Result_t r = _pop_validate(p, data, YAPB_BLOB, *len + 2);
     if (r != YAPB_OK) return r;
-    pkt->pos += 2;
+    p->pos += 2;
 
-    *data = pkt->buffer + pkt->pos;
-    pkt->pos += *len;
-    return check_complete(pkt);
+    *data = p->buffer + p->pos;
+    p->pos += *len;
+    return check_complete(p);
 }
 
 YAPB_Result_t YAPB_pop_nested(YAPB_Packet_t *pkt, YAPB_Packet_t *out) {
+    _YAPB_Packet_t *p = P(pkt);
 
-    if (pkt->pos + YAPB_HEADER_SIZE + 1 > pkt->buffer_size) {
-        pkt->error = YAPB_ERR_INVALID_PACKET;
-        return pkt->error;
+    if (p->pos + YAPB_HEADER_SIZE + 1 > p->buffer_size) {
+        p->error = YAPB_ERR_INVALID_PACKET;
+        return p->error;
     }
-    uint32_t nested_len = read_u32(pkt->buffer + pkt->pos + 1); //the header starts with len
+    uint32_t nested_len = read_u32(p->buffer + p->pos + 1);
 
-    YAPB_Result_t r = _pop_validate(pkt, out, YAPB_NESTED_PKT, nested_len);
+    YAPB_Result_t r = _pop_validate(p, out, YAPB_NESTED_PKT, nested_len);
     if (r != YAPB_OK) return r;
 
-    r = YAPB_load(out, pkt->buffer + pkt->pos, nested_len);
+    r = YAPB_load(out, p->buffer + p->pos, nested_len);
     if (r != YAPB_OK) {
-        pkt->error = r;
-        return pkt->error;
+        p->error = r;
+        return p->error;
     }
 
-    pkt->pos += nested_len;
-    return check_complete(pkt);
+    p->pos += nested_len;
+    return check_complete(p);
 }
 
 YAPB_Result_t YAPB_get_elem_count(const YAPB_Packet_t *pkt, uint16_t *out_count) {
     if (pkt == NULL || out_count == NULL) {
         return YAPB_ERR_NULL_PTR;
     }
-    if (pkt->mode != YAPB_MODE_READ) {
+    const _YAPB_Packet_t *p = CP(pkt);
+    if (p->mode != YAPB_MODE_READ) {
         return YAPB_ERR_INVALID_MODE;
     }
 
     uint16_t count = 0;
     size_t scan_pos = YAPB_HEADER_SIZE;
-    size_t data_end = pkt->buffer_size;
+    size_t data_end = p->buffer_size;
 
     while (scan_pos < data_end) {
-        YAPB_Type_t type = (YAPB_Type_t)pkt->buffer[scan_pos++];
+        YAPB_Type_t type = (YAPB_Type_t)p->buffer[scan_pos++];
 
         size_t skip;
         switch (type) {
@@ -406,13 +438,13 @@ YAPB_Result_t YAPB_get_elem_count(const YAPB_Packet_t *pkt, uint16_t *out_count)
                 if (scan_pos + 2 > data_end) {
                     return YAPB_ERR_INVALID_PACKET;
                 }
-                skip = 2 + read_u16(pkt->buffer + scan_pos);
+                skip = 2 + read_u16(p->buffer + scan_pos);
                 break;
             case YAPB_NESTED_PKT:
                 if (scan_pos + YAPB_HEADER_SIZE > data_end) {
                     return YAPB_ERR_INVALID_PACKET;
                 }
-                skip = read_u32(pkt->buffer + scan_pos);
+                skip = read_u32(p->buffer + scan_pos);
                 break;
             default:
                 return YAPB_ERR_INVALID_PACKET;
@@ -433,19 +465,20 @@ YAPB_Result_t YAPB_pop_next(YAPB_Packet_t *pkt, YAPB_Element_t *out) {
     if (pkt == NULL || out == NULL) {
         return YAPB_ERR_NULL_PTR;
     }
-    if (pkt->error < 0) {
-        return pkt->error;
+    _YAPB_Packet_t *p = P(pkt);
+    if (p->error < 0) {
+        return p->error;
     }
-    if (pkt->mode != YAPB_MODE_READ) {
-        pkt->error = YAPB_ERR_INVALID_MODE;
-        return pkt->error;
+    if (p->mode != YAPB_MODE_READ) {
+        p->error = YAPB_ERR_INVALID_MODE;
+        return p->error;
     }
-    if (pkt->pos >= pkt->buffer_size) {
-        pkt->error = YAPB_ERR_NO_MORE_ELEMENTS;
-        return pkt->error;
+    if (p->pos >= p->buffer_size) {
+        p->error = YAPB_ERR_NO_MORE_ELEMENTS;
+        return p->error;
     }
 
-    YAPB_Type_t type = (YAPB_Type_t)pkt->buffer[pkt->pos];
+    YAPB_Type_t type = (YAPB_Type_t)p->buffer[p->pos];
     out->type = type;
 
     switch (type) {
@@ -458,8 +491,8 @@ YAPB_Result_t YAPB_pop_next(YAPB_Packet_t *pkt, YAPB_Element_t *out) {
         case YAPB_BLOB:    return YAPB_pop_blob(pkt, &out->val.blob.data, &out->val.blob.len);
         case YAPB_NESTED_PKT: return YAPB_pop_nested(pkt, &out->val.nested);
         default:
-            pkt->error = YAPB_ERR_INVALID_PACKET;
-            return pkt->error;
+            p->error = YAPB_ERR_INVALID_PACKET;
+            return p->error;
     }
 }
 
@@ -467,7 +500,7 @@ YAPB_Result_t YAPB_get_error(const YAPB_Packet_t *pkt) {
     if (pkt == NULL) {
         return YAPB_ERR_NULL_PTR;
     }
-    return pkt->error;
+    return CP(pkt)->error;
 }
 
 const char *YAPB_Result_str(YAPB_Result_t result) {
