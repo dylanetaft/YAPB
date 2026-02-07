@@ -60,6 +60,19 @@ while (YAPB_pop_next(&pkt, &elem) >= 0) {
 }
 ```
 
+### Access buffer / check completeness
+```c
+// Get the raw buffer pointer and length (write mode: only after finalize)
+size_t len;
+const uint8_t *buf = YAPB_get_buffer(&pkt, &len);
+
+// Check if a receive buffer has a complete packet (for TCP framing)
+if (YAPB_check_complete(recv_buf, recv_len)) {
+    YAPB_load(&pkt, recv_buf, recv_len);
+    // ... pop elements ...
+}
+```
+
 ## Critical Details
 
 1. **All push/pop functions take pointers** - `YAPB_push_i32(&pkt, &val)` not `val`.
@@ -81,6 +94,12 @@ while (YAPB_pop_next(&pkt, &elem) >= 0) {
 7. **Nested packets share the parent buffer** - `YAPB_pop_nested()` sets up a read-mode packet pointing into the parent's buffer. The parent data must stay alive.
 
 8. **Network byte order** - All multi-byte values are big-endian on the wire. The API handles conversion transparently.
+
+9. **Buffer access** - `YAPB_get_buffer()` returns a `const uint8_t *` to the packet's backing buffer and optionally its length via `out_len`. Returns NULL if pkt is NULL or if in write mode and not yet finalized.
+
+10. **Packet completeness check** - `YAPB_check_complete()` is a standalone function (no packet needed) that checks if a raw data buffer contains a complete YAPB packet by reading the 4-byte header length. Useful for TCP stream framing.
+
+11. **Finalization is one-shot** - `YAPB_finalize()` can only be called once per initialized packet. Calling it again returns `YAPB_ERR_INVALID_MODE`. All push functions also reject writes after finalization.
 
 ## Type Tags
 

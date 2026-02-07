@@ -1,6 +1,7 @@
 #pragma once
 #include <stdint.h>
 #include <stddef.h>
+#include <stdbool.h>
 #include <stdalign.h>
 
 /**
@@ -425,3 +426,31 @@ YAPB_Result_t YAPB_get_elem_count(const YAPB_Packet_t *pkt, uint16_t *out_count)
  * @return Static string description (never NULL).
  */
 const char *YAPB_Result_str(YAPB_Result_t result);
+
+/**
+ * @ingroup query
+ * @brief Get a const pointer to the packet's backing buffer and its length.
+ *
+ * In read mode, returns the buffer and the packet length from the header.
+ * In write mode, returns the buffer and its length only after YAPB_finalize()
+ * has been called; returns NULL if the packet has not been finalized.
+ *
+ * @param pkt     Packet to query.
+ * @param out_len Output: packet length in bytes. May be NULL.
+ * @return Pointer to the buffer, or NULL if pkt is NULL or not finalized in write mode.
+ */
+const uint8_t *YAPB_get_buffer(const YAPB_Packet_t *pkt, size_t *out_len);
+
+/**
+ * @ingroup query
+ * @brief Check if a receive buffer contains a complete YAPB packet.
+ *
+ * Reads the 4-byte header to determine the expected packet length,
+ * then checks if the buffer contains at least that many bytes.
+ * Useful for framing packets from a stream (e.g., TCP socket).
+ *
+ * @param data Raw data buffer (may be a partial packet).
+ * @param len  Number of bytes available in the buffer.
+ * @return true if the buffer contains a complete packet, false otherwise.
+ */
+bool YAPB_check_complete(const uint8_t *data, size_t len);

@@ -102,6 +102,8 @@ YAPB_pop_u16(&pkt, &new_field); /* stays 42 if packet ended */
 |----------|-------------|
 | `YAPB_get_error(*in)` | Get sticky error state |
 | `YAPB_get_elem_count(*in, *out_count)` | Count elements without advancing position |
+| `YAPB_get_buffer(*in)` | Get const pointer to packet buffer |
+| `YAPB_check_complete(*in_data, in_len)` | Check if buffer contains a complete packet |
 | `YAPB_Result_str(in_result)` | Get string name for result code |
 
 ## Important Notes
