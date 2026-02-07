@@ -75,7 +75,7 @@ int32_t out;
 YAPB_pop_i32(&rpkt, &out); /* out == 25 */
 ```
 
-##Documentation
+## Documentation
 
 See https://df00znet-dev.github.io/YAPB/
 
