@@ -75,6 +75,10 @@ int32_t out;
 YAPB_pop_i32(&rpkt, &out); /* out == 25 */
 ```
 
+##Documentation
+
+See https://df00znet-dev.github.io/YAPB/
+
 ## License
 
 LGPL-2.1 - see [LICENSE](LICENSE)
