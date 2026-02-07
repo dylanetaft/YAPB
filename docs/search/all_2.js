@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['d_0',['d',['../structYAPB__Element.html#a834218218e4507c5861dde17eeead4bd',1,'YAPB_Element']]]
+  ['blob_0',['blob',['../structYAPB__Element.html#abb86e514ecbe51e43dd965044e551f21',1,'YAPB_Element']]],
+  ['buffer_1',['YAPB - Yet Another Protocol Buffer',['../md_YAPB.html',1,'']]]
 ];

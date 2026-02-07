@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['type_0',['type',['../structYAPB__Element.html#a90993be94649bc8037608c91af6cbcb9',1,'YAPB_Element']]],
-  ['types_1',['Types',['../group__types.html',1,'']]]
+  ['nested_0',['nested',['../structYAPB__Element.html#aa4fb1fb4815306a0ecc11ad2d53e5b7f',1,'YAPB_Element']]],
+  ['notes_1',['Important Notes',['../md_YAPB.html#autotoc_md14',1,'']]]
 ];

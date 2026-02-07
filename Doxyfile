@@ -1,5 +1,5 @@
 PROJECT_NAME           = "YAPB"
-INPUT                  = src include
+INPUT                  = src include YAPB.md
 RECURSIVE              = YES
 GENERATE_HTML          = YES
 GENERATE_LATEX         = NO

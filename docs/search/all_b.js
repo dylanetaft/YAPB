@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['val_0',['val',['../structYAPB__Element.html#a4698b161a28c01e067ed50a8c545fae3',1,'YAPB_Element']]]
+  ['operations_0',['Operations',['../group__pop.html',1,'Pop Operations'],['../group__push.html',1,'Push Operations'],['../group__query.html',1,'Query Operations']]]
 ];

@@ -25,6 +25,26 @@
 var NAVTREE =
 [
   [ "YAPB", "index.html", [
+    [ "YAPB - Yet Another Protocol Buffer", "md_YAPB.html", [
+      [ "YAPB Architecture &amp; API", "md_YAPB.html#autotoc_md1", [
+        [ "Packet Format", "md_YAPB.html#autotoc_md2", [
+          [ "Type Tags", "md_YAPB.html#autotoc_md3", null ]
+        ] ],
+        [ "Core Concepts", "md_YAPB.html#autotoc_md4", [
+          [ "Write Mode", "md_YAPB.html#autotoc_md5", null ],
+          [ "Read Mode", "md_YAPB.html#autotoc_md6", null ],
+          [ "Sticky Errors", "md_YAPB.html#autotoc_md7", null ],
+          [ "Forward Compatibility", "md_YAPB.html#autotoc_md8", null ]
+        ] ],
+        [ "API Reference", "md_YAPB.html#autotoc_md9", [
+          [ "Lifecycle", "md_YAPB.html#autotoc_md10", null ],
+          [ "Push (Write Mode)", "md_YAPB.html#autotoc_md11", null ],
+          [ "Pop (Read Mode)", "md_YAPB.html#autotoc_md12", null ],
+          [ "Query", "md_YAPB.html#autotoc_md13", null ]
+        ] ],
+        [ "Important Notes", "md_YAPB.html#autotoc_md14", null ]
+      ] ]
+    ] ],
     [ "Topics", "topics.html", "topics" ],
     [ "Data Structures", "annotated.html", [
       [ "Data Structures", "annotated.html", "annotated_dup" ],
