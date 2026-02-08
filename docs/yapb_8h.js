@@ -27,7 +27,9 @@ var yapb_8h =
       [ "YAPB_BLOB", "group__types.html#gga0f5c606297eea377f4bd19e73b79a438a632c54de20f6c67ae3837b093615e6fc", null ],
       [ "YAPB_NESTED_PKT", "group__types.html#gga0f5c606297eea377f4bd19e73b79a438aeae553202d5a230f8a332bd095cceb19", null ]
     ] ],
+    [ "YAPB_check_complete", "group__query.html#ga422ed4955f88071c37b1cebe3c5b7d7a", null ],
     [ "YAPB_finalize", "group__lifecycle.html#ga15bd840b595f949ad3e109e32d19a20f", null ],
+    [ "YAPB_get_buffer", "group__query.html#ga2abf75434c570b622eb99811c239a180", null ],
     [ "YAPB_get_elem_count", "group__query.html#gae7d2650465de8c7920d340ced903d726", null ],
     [ "YAPB_get_error", "group__query.html#ga0a6e834c4964dae69918e4d027df3745", null ],
     [ "YAPB_initialize", "group__lifecycle.html#gac61c97f5ac36b52edea867d50c42e85d", null ],

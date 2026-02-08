@@ -96,6 +96,7 @@ $(function(){initNavTree('yapb_8h.html','',''); });
 <a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;stdint.h&gt;</code><br />
 <code>#include &lt;stddef.h&gt;</code><br />
+<code>#include &lt;stdbool.h&gt;</code><br />
 <code>#include &lt;stdalign.h&gt;</code><br />
 </div>
 <p><a href="yapb_8h_source.html">Go to the source code of this file.</a></p>
@@ -208,6 +209,10 @@ Functions</h2></td></tr>
 <tr class="memdesc:gae7d2650465de8c7920d340ced903d726"><td class="mdescLeft">&#160;</td><td class="mdescRight">Count the number of elements in a packet.  <br /></td></tr>
 <tr class="memitem:gaa496fb93d00c18a0abe64257f9c75eea" id="r_gaa496fb93d00c18a0abe64257f9c75eea"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__query.html#gaa496fb93d00c18a0abe64257f9c75eea">YAPB_Result_str</a> (<a class="el" href="group__types.html#ga4bd8d5556a6e3d7efa3eac404ec5c930">YAPB_Result_t</a> result)</td></tr>
 <tr class="memdesc:gaa496fb93d00c18a0abe64257f9c75eea"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get a human-readable string for a result code.  <br /></td></tr>
+<tr class="memitem:ga2abf75434c570b622eb99811c239a180" id="r_ga2abf75434c570b622eb99811c239a180"><td class="memItemLeft" align="right" valign="top">const uint8_t *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__query.html#ga2abf75434c570b622eb99811c239a180">YAPB_get_buffer</a> (const <a class="el" href="group__types.html#gadef52c7084939443edddee05209a6f67">YAPB_Packet_t</a> *pkt, size_t *out_len)</td></tr>
+<tr class="memdesc:ga2abf75434c570b622eb99811c239a180"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get a const pointer to the packet's backing buffer and its length.  <br /></td></tr>
+<tr class="memitem:ga422ed4955f88071c37b1cebe3c5b7d7a" id="r_ga422ed4955f88071c37b1cebe3c5b7d7a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__query.html#ga422ed4955f88071c37b1cebe3c5b7d7a">YAPB_check_complete</a> (const uint8_t *data, size_t len)</td></tr>
+<tr class="memdesc:ga422ed4955f88071c37b1cebe3c5b7d7a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if a receive buffer contains a complete YAPB packet.  <br /></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>YAPB - Yet Another Protocol Buffer format. </p>

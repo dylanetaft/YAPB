@@ -150,10 +150,10 @@ Sticky Errors</h3>
 <div class="line"><span class="keywordflow">if</span> (<a class="code hl_function" href="group__query.html#ga0a6e834c4964dae69918e4d027df3745">YAPB_get_error</a>(&amp;pkt) &lt; 0) {</div>
 <div class="line">    <span class="comment">/* something went wrong */</span></div>
 <div class="line">}</div>
-<div class="ttc" id="agroup__pop_html_ga3bb81e9d86a29b4f70be0dd3898e1d47"><div class="ttname"><a href="group__pop.html#ga3bb81e9d86a29b4f70be0dd3898e1d47">YAPB_pop_i16</a></div><div class="ttdeci">YAPB_Result_t YAPB_pop_i16(YAPB_Packet_t *pkt, int16_t *out)</div><div class="ttdoc">Pop a signed 16-bit integer.</div><div class="ttdef"><b>Definition</b> yapb.c:314</div></div>
-<div class="ttc" id="agroup__pop_html_ga8e9b59964652f044f8975cc806d34a2f"><div class="ttname"><a href="group__pop.html#ga8e9b59964652f044f8975cc806d34a2f">YAPB_pop_i32</a></div><div class="ttdeci">YAPB_Result_t YAPB_pop_i32(YAPB_Packet_t *pkt, int32_t *out)</div><div class="ttdoc">Pop a signed 32-bit integer.</div><div class="ttdef"><b>Definition</b> yapb.c:323</div></div>
-<div class="ttc" id="agroup__pop_html_gaee63e85fc86677cb98ef27f19e1942f6"><div class="ttname"><a href="group__pop.html#gaee63e85fc86677cb98ef27f19e1942f6">YAPB_pop_i8</a></div><div class="ttdeci">YAPB_Result_t YAPB_pop_i8(YAPB_Packet_t *pkt, int8_t *out)</div><div class="ttdoc">Pop a signed 8-bit integer.</div><div class="ttdef"><b>Definition</b> yapb.c:306</div></div>
-<div class="ttc" id="agroup__query_html_ga0a6e834c4964dae69918e4d027df3745"><div class="ttname"><a href="group__query.html#ga0a6e834c4964dae69918e4d027df3745">YAPB_get_error</a></div><div class="ttdeci">YAPB_Result_t YAPB_get_error(const YAPB_Packet_t *pkt)</div><div class="ttdoc">Get the sticky error state of a packet.</div><div class="ttdef"><b>Definition</b> yapb.c:499</div></div>
+<div class="ttc" id="agroup__pop_html_ga3bb81e9d86a29b4f70be0dd3898e1d47"><div class="ttname"><a href="group__pop.html#ga3bb81e9d86a29b4f70be0dd3898e1d47">YAPB_pop_i16</a></div><div class="ttdeci">YAPB_Result_t YAPB_pop_i16(YAPB_Packet_t *pkt, int16_t *out)</div><div class="ttdoc">Pop a signed 16-bit integer.</div><div class="ttdef"><b>Definition</b> yapb.c:318</div></div>
+<div class="ttc" id="agroup__pop_html_ga8e9b59964652f044f8975cc806d34a2f"><div class="ttname"><a href="group__pop.html#ga8e9b59964652f044f8975cc806d34a2f">YAPB_pop_i32</a></div><div class="ttdeci">YAPB_Result_t YAPB_pop_i32(YAPB_Packet_t *pkt, int32_t *out)</div><div class="ttdoc">Pop a signed 32-bit integer.</div><div class="ttdef"><b>Definition</b> yapb.c:327</div></div>
+<div class="ttc" id="agroup__pop_html_gaee63e85fc86677cb98ef27f19e1942f6"><div class="ttname"><a href="group__pop.html#gaee63e85fc86677cb98ef27f19e1942f6">YAPB_pop_i8</a></div><div class="ttdeci">YAPB_Result_t YAPB_pop_i8(YAPB_Packet_t *pkt, int8_t *out)</div><div class="ttdoc">Pop a signed 8-bit integer.</div><div class="ttdef"><b>Definition</b> yapb.c:310</div></div>
+<div class="ttc" id="agroup__query_html_ga0a6e834c4964dae69918e4d027df3745"><div class="ttname"><a href="group__query.html#ga0a6e834c4964dae69918e4d027df3745">YAPB_get_error</a></div><div class="ttdeci">YAPB_Result_t YAPB_get_error(const YAPB_Packet_t *pkt)</div><div class="ttdoc">Get the sticky error state of a packet.</div><div class="ttdef"><b>Definition</b> yapb.c:503</div></div>
 </div><!-- fragment --><h3 class="doxsection"><a class="anchor" id="autotoc_md8"></a>
 Forward Compatibility</h3>
 <p>Pop functions do NOT modify the output on error. Initialize fields to defaults before popping - if the packet lacks that field, the default is preserved because the pop returns an error (e.g. <span class="tt"><a class="el" href="group__types.html#gga4bd8d5556a6e3d7efa3eac404ec5c930a174bf9b633b1ec83b3aa46c7cfb9337a">YAPB_ERR_NO_MORE_ELEMENTS</a></span>):</p>
@@ -216,6 +216,10 @@ Query</h3>
 <td class="markdownTableBodyNone"><span class="tt">YAPB_get_error(*in)</span>  </td><td class="markdownTableBodyNone">Get sticky error state  </td></tr>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone"><span class="tt">YAPB_get_elem_count(*in, *out_count)</span>  </td><td class="markdownTableBodyNone">Count elements without advancing position  </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><span class="tt">YAPB_get_buffer(*in)</span>  </td><td class="markdownTableBodyNone">Get const pointer to packet buffer  </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"><span class="tt">YAPB_check_complete(*in_data, in_len)</span>  </td><td class="markdownTableBodyNone">Check if buffer contains a complete packet  </td></tr>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone"><span class="tt">YAPB_Result_str(in_result)</span>  </td><td class="markdownTableBodyNone">Get string name for result code  </td></tr>
 </table>

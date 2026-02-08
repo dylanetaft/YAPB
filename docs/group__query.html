@@ -100,10 +100,78 @@ Functions</h2></td></tr>
 <tr class="memdesc:gae7d2650465de8c7920d340ced903d726"><td class="mdescLeft">&#160;</td><td class="mdescRight">Count the number of elements in a packet.  <br /></td></tr>
 <tr class="memitem:gaa496fb93d00c18a0abe64257f9c75eea" id="r_gaa496fb93d00c18a0abe64257f9c75eea"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#gaa496fb93d00c18a0abe64257f9c75eea">YAPB_Result_str</a> (<a class="el" href="group__types.html#ga4bd8d5556a6e3d7efa3eac404ec5c930">YAPB_Result_t</a> result)</td></tr>
 <tr class="memdesc:gaa496fb93d00c18a0abe64257f9c75eea"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get a human-readable string for a result code.  <br /></td></tr>
+<tr class="memitem:ga2abf75434c570b622eb99811c239a180" id="r_ga2abf75434c570b622eb99811c239a180"><td class="memItemLeft" align="right" valign="top">const uint8_t *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ga2abf75434c570b622eb99811c239a180">YAPB_get_buffer</a> (const <a class="el" href="group__types.html#gadef52c7084939443edddee05209a6f67">YAPB_Packet_t</a> *pkt, size_t *out_len)</td></tr>
+<tr class="memdesc:ga2abf75434c570b622eb99811c239a180"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get a const pointer to the packet's backing buffer and its length.  <br /></td></tr>
+<tr class="memitem:ga422ed4955f88071c37b1cebe3c5b7d7a" id="r_ga422ed4955f88071c37b1cebe3c5b7d7a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ga422ed4955f88071c37b1cebe3c5b7d7a">YAPB_check_complete</a> (const uint8_t *data, size_t len)</td></tr>
+<tr class="memdesc:ga422ed4955f88071c37b1cebe3c5b7d7a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if a receive buffer contains a complete YAPB packet.  <br /></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <p>Functions to inspect packet state without modifying it. </p>
 <a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
+<a id="ga422ed4955f88071c37b1cebe3c5b7d7a" name="ga422ed4955f88071c37b1cebe3c5b7d7a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga422ed4955f88071c37b1cebe3c5b7d7a">&#9670;&#160;</a></span>YAPB_check_complete()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool YAPB_check_complete </td>
+          <td>(</td>
+          <td class="paramtype">const uint8_t *</td>          <td class="paramname"><span class="paramname"><em>data</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t</td>          <td class="paramname"><span class="paramname"><em>len</em></span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Check if a receive buffer contains a complete YAPB packet. </p>
+<p>Reads the 4-byte header to determine the expected packet length, then checks if the buffer contains at least that many bytes. Useful for framing packets from a stream (e.g., TCP socket).</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">data</td><td>Raw data buffer (may be a partial packet). </td></tr>
+    <tr><td class="paramname">len</td><td>Number of bytes available in the buffer. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>true if the buffer contains a complete packet, false otherwise. </dd></dl>
+
+</div>
+</div>
+<a id="ga2abf75434c570b622eb99811c239a180" name="ga2abf75434c570b622eb99811c239a180"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga2abf75434c570b622eb99811c239a180">&#9670;&#160;</a></span>YAPB_get_buffer()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">const uint8_t * YAPB_get_buffer </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="group__types.html#gadef52c7084939443edddee05209a6f67">YAPB_Packet_t</a> *</td>          <td class="paramname"><span class="paramname"><em>pkt</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t *</td>          <td class="paramname"><span class="paramname"><em>out_len</em></span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Get a const pointer to the packet's backing buffer and its length. </p>
+<p>In read mode, returns the buffer and the packet length from the header. In write mode, returns the buffer and its length only after <a class="el" href="group__lifecycle.html#ga15bd840b595f949ad3e109e32d19a20f" title="Finalize the packet, writing the total length into the header.">YAPB_finalize()</a> has been called; returns NULL if the packet has not been finalized.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">pkt</td><td>Packet to query. </td></tr>
+    <tr><td class="paramname">out_len</td><td>Output: packet length in bytes. May be NULL. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Pointer to the buffer, or NULL if pkt is NULL or not finalized in write mode. </dd></dl>
+
+</div>
+</div>
 <a id="gae7d2650465de8c7920d340ced903d726" name="gae7d2650465de8c7920d340ced903d726"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#gae7d2650465de8c7920d340ced903d726">&#9670;&#160;</a></span>YAPB_get_elem_count()</h2>
 
